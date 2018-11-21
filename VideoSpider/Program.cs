@@ -1,4 +1,5 @@
 ﻿using System;
+using VideoSpider.Services;
 
 namespace VideoSpider
 {
@@ -6,7 +7,8 @@ namespace VideoSpider
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            SpiderService.Create().Start();
+            Console.ReadKey();
         }
     }
 }
