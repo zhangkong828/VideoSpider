@@ -15,13 +15,18 @@ namespace VideoSpider.Services
     {
         private static readonly object _obj = new object();
         private static SpiderService _instance;
+        private static readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
 
+        private CancellationToken _cancellationToken;
+        private List<Task> _tasks;
         private ConcurrentQueue<string> _queue;
         private VideoRepository _videoRepository;
         private VideoSourceRepository _videoSourceRepository;
 
         private SpiderService()
         {
+            _cancellationToken = _cancellation.Token;
+            _tasks = new List<Task>();
             _queue = new ConcurrentQueue<string>();
             _videoRepository = new VideoRepository();
             _videoSourceRepository = new VideoSourceRepository();
@@ -45,57 +50,76 @@ namespace VideoSpider.Services
 
         public void Start()
         {
-            StartThread(10);
-
+            Logger.ColorConsole("Start");
+            StartThread(5);
+            CheckUpdate();
 
         }
 
         public void Stop()
         {
-
+            Logger.ColorConsole("Cancel...");
+            _cancellation.Cancel();
+            Task.WaitAll(_tasks.ToArray());
+            Logger.ColorConsole("Stop");
         }
 
         private void StartThread(int threadCount)
         {
             for (int i = 0; i < threadCount; i++)
             {
-                Logger.ColorConsole(string.Format("开启线程[{0}]", i + 1), ConsoleColor.Blue);
+                Logger.ColorConsole(string.Format("开启线程[{0}]", i + 1));
 
                 var task = Task.Factory.StartNew(index =>
                 {
-                    Logger.ColorConsole2(string.Format("线程[{0}]已启动,线程ID:{1}", index, Thread.CurrentThread.ManagedThreadId), ConsoleColor.Blue);
-                    try
-                    {
-                        var url = string.Empty;
-                        if (_queue.TryDequeue(out url))
-                        {
-                            DoWork(url);
-                        }
-                        else
-                        {
-                            Thread.Sleep(1000 * 10);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.ColorConsole2(ex.Message, ConsoleColor.Red);
-                    }
-                }, i + 1);
+                    Logger.ColorConsole2(string.Format("线程[{0}]已启动,线程ID:{1}", index, Thread.CurrentThread.ManagedThreadId));
 
+                    while (true)
+                    {
+                        try
+                        {
+                            _cancellationToken.ThrowIfCancellationRequested();
+                            var url = string.Empty;
+                            if (_queue.TryDequeue(out url))
+                            {
+                                Logger.ColorConsole2(string.Format("线程[{0}]处理数据:{1}", index, url));
+                                DoWork(url);
+                            }
+                            else
+                            {
+                                Thread.Sleep(1000 * 10);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            if (ex is OperationCanceledException)
+                                break;
+                            else
+                                Logger.ColorConsole2(string.Format("线程[{0}]出现异常:{1}", index, ex.Message), ConsoleColor.Red);
+                        }
+                        finally
+                        {
+                            Thread.Sleep(100);
+                        }
+                    }
+
+
+                }, i + 1);
+                _tasks.Add(task);
             }
         }
 
 
         private void CheckUpdate()
         {
-            Logger.ColorConsole("开始获取更新", ConsoleColor.Blue);
+            Logger.ColorConsole("开始获取更新");
             var url = "http://caijizy.com/?m=vod-index-pg-{0}.html";
-            for (int i = 1; i < 340; i++)
+            for (int i = 1; i < 345; i++)
             {
                 try
                 {
                     var targetUrl = string.Format(url, i);
-                    Logger.ColorConsole2(targetUrl, ConsoleColor.Blue);
+                    Logger.ColorConsole2(targetUrl);
 
                     var html = HtmlHelper.Get(targetUrl).Result;
                     var list = Regex.Matches(html, "<td class=\"l\"><a href=\"(.+?)\" target=\"_blank\">(.+?)<font color=\"red\"> \\[(.*?)\\]</font>");
@@ -112,7 +136,7 @@ namespace VideoSpider.Services
                 }
                 catch (Exception ex)
                 {
-                    Logger.ColorConsole2(ex.Message, ConsoleColor.Red);
+                    Logger.ColorConsole2(string.Format("获取更新异常:{0}", ex.Message), ConsoleColor.Red);
                 }
                 finally
                 {
@@ -164,7 +188,7 @@ namespace VideoSpider.Services
                 {
                     var title = item.Groups[1].Value;
                     var address = item.Groups[2].Value;
-                    Logger.ColorConsole2(string.Format("[{0}]{1}", title, address));
+                    //Logger.ColorConsole2(string.Format("{0}[{1}]{2}", name, title, address), ConsoleColor.Green);
                     sourceList.Add(new Source()
                     {
                         Title = title,
@@ -172,12 +196,12 @@ namespace VideoSpider.Services
                     });
                 }
 
-                //简单校验
+                //非空校验
                 if (string.IsNullOrEmpty(name) || sourceList.Count == 0)
                     return;
 
-                var videos = _videoRepository.Find(x => x.Name == name);
-                if (videos.Count == 0)
+                var source = _videoSourceRepository.FindOrDefault(x => x.Url == url.TrimX());
+                if (source == null)
                 {
                     //新增
                     var video = new Video()
@@ -200,11 +224,66 @@ namespace VideoSpider.Services
                         ReleaseDate = releaseDate
                     };
                     _videoRepository.Insert(video);
+
+                    var nSource = new VideoSource();
+                    nSource.Id = ObjectId.NextId();
+                    nSource.VideoId = video.Id;
+                    nSource.SourceName = "jsm3u8";
+                    nSource.LastUpdateTime = updateTime.ToDateTime();
+                    nSource.Url = url.TrimX();
+                    nSource.Sources = sourceList;
+                    nSource.CreateTime = DateTime.Now;
+                    nSource.UpdateTime = DateTime.Now;
+                    _videoSourceRepository.Insert(nSource);
+
+                    Logger.ColorConsole2(string.Format("新增成功:{0}[{1}]", name, remark), ConsoleColor.Green);
                 }
                 else
                 {
                     //更新
+                    var vid = source.VideoId;
+                    var video = _videoRepository.FindOrDefault(x => x.Id == vid);
+                    if (video != null)
+                    {
+                        _videoRepository.Update(x => x.Id == video.Id, new Video()
+                        {
+                            Id = video.Id,
+                            CreateTime = video.CreateTime,
+                            UpdateTime = DateTime.Now,
+                            Name = name,
+                            Alias = alias,
+                            Image = DownLoadImageToBase64(image),
+                            Remark = remark,
+                            Description = description,
+                            Starring = starring,
+                            Director = director,
+                            Classify = classify,
+                            Type = type,
+                            Language = language,
+                            Region = region,
+                            State = state,
+                            ReleaseDate = releaseDate
+                        });
+                        _videoSourceRepository.Update(x => x.Id == source.Id, new VideoSource()
+                        {
+                            Id = source.Id,
+                            VideoId = source.VideoId,
+                            SourceName = "jsm3u8",
+                            LastUpdateTime = updateTime.ToDateTime(),
+                            Url = url.TrimX(),
+                            Sources = sourceList,
+                            CreateTime = source.CreateTime,
+                            UpdateTime = DateTime.Now
+                        });
+                        Logger.ColorConsole2(string.Format("更新成功:{0}[{1}]", name, remark), ConsoleColor.Green);
+                    }
+                    else
+                    {
+                        _videoSourceRepository.Delete(x => x.Id == source.Id);
+                        Logger.ColorConsole2(string.Format("更新失败:{0}[{1}]", name, remark), ConsoleColor.Red);
+                    }
                 }
+
             }
         }
 

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace VideoSpider.Infrastructure.Extension
 {
@@ -11,6 +9,15 @@ namespace VideoSpider.Infrastructure.Extension
             if (string.IsNullOrEmpty(s))
                 return "";
             return s.Trim();
+        }
+
+        public static DateTime ToDateTime(this string s)
+        {
+            var result = DateTime.MinValue;
+            if (string.IsNullOrEmpty(s))
+                return result;
+            DateTime.TryParse(s, out result);
+            return result;
         }
     }
 }

@@ -52,22 +52,18 @@ namespace VideoSpider.Infrastructure
         }
 
 
-        public static void ColorConsole(string msg, ConsoleColor consoleColor = ConsoleColor.Green)
+        public static void ColorConsole(string msg, ConsoleColor consoleColor = ConsoleColor.Blue)
         {
-            var old = Console.ForegroundColor;
             Console.ForegroundColor = consoleColor;
             Console.WriteLine($"{msg}");
-            Console.ForegroundColor = old;
 
             _customAction?.Invoke(msg);
         }
 
-        public static void ColorConsole2(string msg, ConsoleColor consoleColor = ConsoleColor.Green)
+        public static void ColorConsole2(string msg, ConsoleColor consoleColor = ConsoleColor.Blue)
         {
-            var old = Console.ForegroundColor;
             Console.ForegroundColor = consoleColor;
             Console.WriteLine($"[{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}]{msg}");
-            Console.ForegroundColor = old;
 
             _customAction?.Invoke(msg);
         }
