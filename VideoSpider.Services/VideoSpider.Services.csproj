@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\VideoSpider.Infrastructure\VideoSpider.Infrastructure.csproj" />
+    <ProjectReference Include="..\VideoSpider.Model\VideoSpider.Model.csproj" />
   </ItemGroup>
 
 </Project>

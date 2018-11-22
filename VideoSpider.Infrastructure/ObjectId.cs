@@ -12,9 +12,9 @@ namespace VideoSpider.Infrastructure
             _idWorker = new IdWorker(0, 0);//机器标识  数据中心标识
         }
 
-        public static string NextId()
+        public static long NextId()
         {
-            return _idWorker.NextId().ToString();
+            return _idWorker.NextId();
         }
 
     }
