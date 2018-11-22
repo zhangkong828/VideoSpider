@@ -151,7 +151,7 @@ namespace VideoSpider.Services
                 //上映年份
                 video.ReleaseDate = Regex.Match(html, "<!--年代开始-->(.*?)<!--年代结束-->").Groups[1].Value;
                 //更新时间
-                video.OriginalUpdateTime = Regex.Match(html, "<!--时间开始-->(.*?)<!--时间结束-->").Groups[1].Value;
+                var OriginalUpdateTime = Regex.Match(html, "<!--时间开始-->(.*?)<!--时间结束-->").Groups[1].Value;
                 //简介
                 video.Description = Regex.Match(html, "<!--简介开始-->(.*?)<!--简介结束-->").Groups[1].Value;
 

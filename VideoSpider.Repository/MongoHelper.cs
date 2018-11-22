@@ -28,9 +28,9 @@ namespace VideoSpider.Repository
 
         }
 
-        private readonly string _constr;
-        private readonly string _dbName;
-        private readonly string _collectionName;
+        public readonly string _constr;
+        public readonly string _dbName;
+        public readonly string _collectionName;
         private readonly MongoClient _client;
 
         private MongoHelper()

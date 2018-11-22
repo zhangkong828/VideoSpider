@@ -8,12 +8,7 @@ namespace VideoSpider.Model
     public class Video
     {
         public long Id { get; set; }
-        [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
-        public DateTime CreateTime { get; set; }
-        [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
-        public DateTime UpdateTime { get; set; }
-
-
+        
         /// <summary>
         /// 名称
         /// </summary>
@@ -66,11 +61,12 @@ namespace VideoSpider.Model
         /// 上映年份
         /// </summary>
         public string ReleaseDate { get; set; }
-        /// <summary>
-        /// 原始更新时间
-        /// </summary>
-        public string OriginalUpdateTime { get; set; }
-       
-       
+
+        [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
+        public DateTime CreateTime { get; set; }
+        [BsonDateTimeOptions(Kind = DateTimeKind.Local)]
+        public DateTime UpdateTime { get; set; }
+
+
     }
 }

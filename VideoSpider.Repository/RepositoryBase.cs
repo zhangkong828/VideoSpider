@@ -7,12 +7,14 @@ using System.Text;
 
 namespace VideoSpider.Repository
 {
-    public class RepositoryBase<T>  where T : class
+    public class RepositoryBase<T> where T : class
     {
         protected IMongoCollection<T> ICollection;
 
-        public RepositoryBase(string dbName, string collectionName)
+        public RepositoryBase(string collectionName, string dbName = null)
         {
+            if (string.IsNullOrWhiteSpace(dbName))
+                dbName = MongoHelper.Instance._dbName;
             ICollection = MongoHelper.Instance.GetCollection<T>(dbName, collectionName);
         }
 
