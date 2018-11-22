@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using VideoSpider.Infrastructure;
+using VideoSpider.Infrastructure.Extension;
 using VideoSpider.Model;
+using VideoSpider.Repository;
 
 namespace VideoSpider.Services
 {
@@ -14,10 +17,14 @@ namespace VideoSpider.Services
         private static SpiderService _instance;
 
         private ConcurrentQueue<string> _queue;
+        private VideoRepository _videoRepository;
+        private VideoSourceRepository _videoSourceRepository;
 
         private SpiderService()
         {
             _queue = new ConcurrentQueue<string>();
+            _videoRepository = new VideoRepository();
+            _videoSourceRepository = new VideoSourceRepository();
         }
 
         public static SpiderService Create()
@@ -117,44 +124,39 @@ namespace VideoSpider.Services
 
         private void DoWork(string url)
         {
-            //去重
             var html = HtmlHelper.Get(url).Result;
             if (!string.IsNullOrEmpty(html))
             {
-                var video = new Video();
-                video.Id = ObjectId.NextId();
-                video.CreateTime = DateTime.Now;
-                video.UpdateTime = DateTime.Now;
-
                 //图片
-                video.Image = Regex.Match(html, "<!--图片开始--><img src=\"(.*?)\"/><!--图片结束-->").Groups[1].Value;
+                var image = Regex.Match(html, "<!--图片开始--><img src=\"(.*?)\"/><!--图片结束-->").Groups[1].Value.TrimX();
                 //名称
-                video.Name = Regex.Match(html, "<!--片名开始-->(.*?)<!--片名结束-->").Groups[1].Value;
+                var name = Regex.Match(html, "<!--片名开始-->(.*?)<!--片名结束-->").Groups[1].Value.TrimX();
                 //别名
-                video.Alias = Regex.Match(html, "<!--别名开始-->(.*?)<!--别名结束-->").Groups[1].Value;
+                var alias = Regex.Match(html, "<!--别名开始-->(.*?)<!--别名结束-->").Groups[1].Value.TrimX();
                 //备注
-                video.Remark = Regex.Match(html, "<!--备注开始-->(.*?)<!--备注结束-->").Groups[1].Value;
+                var remark = Regex.Match(html, "<!--备注开始-->(.*?)<!--备注结束-->").Groups[1].Value.TrimX();
                 //主演
-                video.Starring = Regex.Match(html, "<!--主演开始-->(.*?)<!--主演结束-->").Groups[1].Value;
+                var starring = Regex.Match(html, "<!--主演开始-->(.*?)<!--主演结束-->").Groups[1].Value.TrimX();
                 //导演
-                video.Director = Regex.Match(html, "<!--导演开始-->(.*?)<!--导演结束-->").Groups[1].Value;
+                var director = Regex.Match(html, "<!--导演开始-->(.*?)<!--导演结束-->").Groups[1].Value.TrimX();
                 //栏目分类
-                video.Classify = Regex.Match(html, "<!--栏目开始-->(.*?)<!--栏目结束-->").Groups[1].Value;
+                var classify = Regex.Match(html, "<!--栏目开始-->(.*?)<!--栏目结束-->").Groups[1].Value.TrimX();
                 //影片类型
-                video.Type = Regex.Match(html, "<!--类型开始-->(.*?)<!--类型结束-->").Groups[1].Value;
+                var type = Regex.Match(html, "<!--类型开始-->(.*?)<!--类型结束-->").Groups[1].Value.TrimX();
                 //语言分类
-                video.Language = Regex.Match(html, "<!--语言开始-->(.*?)<!--语言结束-->").Groups[1].Value;
+                var language = Regex.Match(html, "<!--语言开始-->(.*?)<!--语言结束-->").Groups[1].Value.TrimX();
                 //影片地区
-                video.Region = Regex.Match(html, "<!--地区开始-->(.*?)<!--地区结束-->").Groups[1].Value;
+                var region = Regex.Match(html, "<!--地区开始-->(.*?)<!--地区结束-->").Groups[1].Value.TrimX();
                 //连载状态
-                video.State = Regex.Match(html, "<!--连载开始-->(.*?)<!--连载结束-->").Groups[1].Value;
+                var state = Regex.Match(html, "<!--连载开始-->(.*?)<!--连载结束-->").Groups[1].Value.TrimX();
                 //上映年份
-                video.ReleaseDate = Regex.Match(html, "<!--年代开始-->(.*?)<!--年代结束-->").Groups[1].Value;
+                var releaseDate = Regex.Match(html, "<!--年代开始-->(.*?)<!--年代结束-->").Groups[1].Value.TrimX();
                 //更新时间
-                var OriginalUpdateTime = Regex.Match(html, "<!--时间开始-->(.*?)<!--时间结束-->").Groups[1].Value;
+                var updateTime = Regex.Match(html, "<!--时间开始-->(.*?)<!--时间结束-->").Groups[1].Value.TrimX();
                 //简介
-                video.Description = Regex.Match(html, "<!--简介开始-->(.*?)<!--简介结束-->").Groups[1].Value;
+                var description = Regex.Match(html, "<!--简介开始-->(.*?)<!--简介结束-->").Groups[1].Value.TrimX();
 
+                var sourceList = new List<Source>();
                 //jsm3u8
                 var jsm3u8 = Regex.Match(html, "<!--前jsm3u8-->(.*?)<!--后jsm3u8-->").Groups[1].Value;
                 var list = Regex.Matches(jsm3u8, "<input.+?value=\"(.+?)\\$(.+?)\".+?>");
@@ -163,10 +165,58 @@ namespace VideoSpider.Services
                     var title = item.Groups[1].Value;
                     var address = item.Groups[2].Value;
                     Logger.ColorConsole2(string.Format("[{0}]{1}", title, address));
+                    sourceList.Add(new Source()
+                    {
+                        Title = title,
+                        Address = address
+                    });
+                }
+
+                //简单校验
+                if (string.IsNullOrEmpty(name) || sourceList.Count == 0)
+                    return;
+
+                var videos = _videoRepository.Find(x => x.Name == name);
+                if (videos.Count == 0)
+                {
+                    //新增
+                    var video = new Video()
+                    {
+                        Id = ObjectId.NextId(),
+                        CreateTime = DateTime.Now,
+                        UpdateTime = DateTime.Now,
+                        Name = name,
+                        Alias = alias,
+                        Image = DownLoadImageToBase64(image),
+                        Remark = remark,
+                        Description = description,
+                        Starring = starring,
+                        Director = director,
+                        Classify = classify,
+                        Type = type,
+                        Language = language,
+                        Region = region,
+                        State = state,
+                        ReleaseDate = releaseDate
+                    };
+                    _videoRepository.Insert(video);
+                }
+                else
+                {
+                    //更新
                 }
             }
         }
 
+
+        private string DownLoadImageToBase64(string url)
+        {
+            var bytes = HtmlHelper.DownLoad(url);
+            if (bytes != null)
+                return Convert.ToBase64String(bytes);
+            else
+                return "";
+        }
 
     }
 }

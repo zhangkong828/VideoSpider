@@ -7,6 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="..\VideoSpider.Infrastructure\VideoSpider.Infrastructure.csproj" />
     <ProjectReference Include="..\VideoSpider.Model\VideoSpider.Model.csproj" />
+    <ProjectReference Include="..\VideoSpider.Repository\VideoSpider.Repository.csproj" />
   </ItemGroup>
 
 </Project>

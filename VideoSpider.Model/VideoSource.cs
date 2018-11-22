@@ -23,7 +23,7 @@ namespace VideoSpider.Model
         /// </summary>
         public string Url { get; set; }
         /// <summary>
-        /// 视频源
+        /// 源地址
         /// </summary>
         public List<Source> Sources { get; set; }
 
