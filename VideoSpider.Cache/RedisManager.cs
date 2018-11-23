@@ -17,22 +17,27 @@ namespace VideoSpider.Cache
         private static readonly string ConnectionString;
 
         private static IConnectionMultiplexer _connMultiplexer;
-        private readonly IDatabase _db;
+        private static IDatabase _db
+        {
+            get
+            {
+                return GetConnectionRedisMultiplexer().GetDatabase(0);
+            }
+        }
 
         static RedisManager()
         {
-            ConnectionString = ConfigurationManager.GetValue("RedisConnectionString");
-            DefaultKey = ConfigurationManager.GetValue("Redis.DefaultKey");
+            ConnectionString = ConfigurationManager.GetValue("Redis:connectionString");
+            DefaultKey = ConfigurationManager.GetValue("Redis:defaultKey");
 
             _connMultiplexer = ConnectionMultiplexer.Connect(ConnectionString);
         }
 
-        public RedisManager(int db = 0)
+        private RedisManager()
         {
-            _db = _connMultiplexer.GetDatabase(db);
         }
 
-        public IConnectionMultiplexer GetConnectionRedisMultiplexer()
+        private static IConnectionMultiplexer GetConnectionRedisMultiplexer()
         {
             if (_connMultiplexer == null || !_connMultiplexer.IsConnected)
                 lock (Locker)
@@ -46,7 +51,7 @@ namespace VideoSpider.Cache
 
         #region 私有方法
 
-        private string AddKeyPrefix(string key)
+        private static string AddKeyPrefix(string key)
         {
             return $"{DefaultKey}:{key}";
         }
@@ -56,7 +61,7 @@ namespace VideoSpider.Cache
         /// </summary>
         /// <param name="obj"></param>
         /// <returns></returns>
-        private byte[] Serialize(object obj)
+        private static byte[] Serialize(object obj)
         {
             if (obj == null)
                 return null;
@@ -76,7 +81,7 @@ namespace VideoSpider.Cache
         /// <typeparam name="T"></typeparam>
         /// <param name="data"></param>
         /// <returns></returns>
-        private T Deserialize<T>(byte[] data)
+        private static T Deserialize<T>(byte[] data)
         {
             if (data == null)
                 return default(T);
@@ -101,7 +106,7 @@ namespace VideoSpider.Cache
         /// <param name="value"></param>
         /// <param name="expiry"></param>
         /// <returns></returns>
-        public bool StringSet(string key, string value, TimeSpan? expiry = null)
+        public static bool StringSet(string key, string value, TimeSpan? expiry = null)
         {
             key = AddKeyPrefix(key);
             return _db.StringSet(key, value, expiry);
@@ -112,7 +117,7 @@ namespace VideoSpider.Cache
         /// </summary>
         /// <param name="keyValuePairs"></param>
         /// <returns></returns>
-        public bool StringSet(IEnumerable<KeyValuePair<string, string>> keyValuePairs)
+        public static bool StringSet(IEnumerable<KeyValuePair<string, string>> keyValuePairs)
         {
             var pairs = keyValuePairs.Select(x => new KeyValuePair<RedisKey, RedisValue>(AddKeyPrefix(x.Key), x.Value));
             return _db.StringSet(pairs.ToArray());
@@ -124,10 +129,10 @@ namespace VideoSpider.Cache
         /// <param name="redisKey"></param>
         /// <param name="expiry"></param>
         /// <returns></returns>
-        public string StringGet(string redisKey)
+        public static string StringGet(string key)
         {
-            redisKey = AddKeyPrefix(redisKey);
-            return _db.StringGet(redisKey);
+            key = AddKeyPrefix(key);
+            return _db.StringGet(key);
         }
 
         /// <summary>
@@ -137,7 +142,7 @@ namespace VideoSpider.Cache
         /// <param name="value"></param>
         /// <param name="expiry"></param>
         /// <returns></returns>
-        public bool StringSet<T>(string key, T value, TimeSpan? expiry = null)
+        public static bool StringSet<T>(string key, T value, TimeSpan? expiry = null)
         {
             key = AddKeyPrefix(key);
             var json = Serialize(value);
@@ -150,7 +155,7 @@ namespace VideoSpider.Cache
         /// </summary>
         /// <param name="key"></param>
         /// <returns></returns>
-        public T StringGet<T>(string key)
+        public static T StringGet<T>(string key)
         {
             key = AddKeyPrefix(key);
             return Deserialize<T>(_db.StringGet(key));
@@ -162,7 +167,7 @@ namespace VideoSpider.Cache
         /// <param name="key"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public double StringIncrement(string key, double value = 1)
+        public static double StringIncrement(string key, double value = 1)
         {
             key = AddKeyPrefix(key);
             return _db.StringIncrement(key, value);
@@ -174,7 +179,7 @@ namespace VideoSpider.Cache
         /// <param name="key"></param>
         /// <param name="value"></param>
         /// <returns></returns>
-        public double StringDecrement(string key, double value = 1)
+        public static double StringDecrement(string key, double value = 1)
         {
             key = AddKeyPrefix(key);
             return _db.StringDecrement(key, value);
@@ -182,6 +187,18 @@ namespace VideoSpider.Cache
 
         #endregion String 操作
 
+
+        public static bool KeyExists(string key)
+        {
+            key = AddKeyPrefix(key);
+            return _db.KeyExists(key);
+        }
+
+        public static bool KeyDelete(string key)
+        {
+            key = AddKeyPrefix(key);
+            return _db.KeyDelete(key);
+        }
 
     }
 }
