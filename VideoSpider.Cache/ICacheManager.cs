@@ -11,9 +11,9 @@ namespace VideoSpider.Cache
         T Get<T>(string key);
 
 
-        bool Set(string key, string data, int cacheTime);
+        bool Set(string key, string data, int cacheTime = 0);
 
-        bool Set<T>(string key, T data, int cacheTime);
+        bool Set<T>(string key, T data, int cacheTime = 0);
 
 
         bool IsExist(string key);

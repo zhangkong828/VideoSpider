@@ -24,7 +24,7 @@ namespace VideoSpider.Cache
             return RedisManager.StringSet(key, data, expiry);
         }
 
-        public bool Set<T>(string key, T data, int cacheTime)
+        public bool Set<T>(string key, T data, int cacheTime = 0)
         {
             TimeSpan? expiry = null;
             if (cacheTime > 0)
