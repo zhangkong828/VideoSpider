@@ -5,13 +5,15 @@ VisualStudioVersion = 15.0.28307.102
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VideoSpider", "VideoSpider\VideoSpider.csproj", "{D03E0353-F3B3-42F7-A4A8-8DDC4B90726B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoSpider.Infrastructure", "VideoSpider.Infrastructure\VideoSpider.Infrastructure.csproj", "{6C73AADE-3035-4162-9135-29D610C74DD7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VideoSpider.Infrastructure", "VideoSpider.Infrastructure\VideoSpider.Infrastructure.csproj", "{6C73AADE-3035-4162-9135-29D610C74DD7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoSpider.Repository", "VideoSpider.Repository\VideoSpider.Repository.csproj", "{006E5794-83C0-4C83-8511-96FEF90B0357}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VideoSpider.Repository", "VideoSpider.Repository\VideoSpider.Repository.csproj", "{006E5794-83C0-4C83-8511-96FEF90B0357}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoSpider.Model", "VideoSpider.Model\VideoSpider.Model.csproj", "{90DA27DC-7A9C-4048-B97B-96A91C53FA50}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VideoSpider.Model", "VideoSpider.Model\VideoSpider.Model.csproj", "{90DA27DC-7A9C-4048-B97B-96A91C53FA50}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoSpider.Services", "VideoSpider.Services\VideoSpider.Services.csproj", "{BDF7BB0A-A11B-4FB2-8629-1F34BED9A8F3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "VideoSpider.Services", "VideoSpider.Services\VideoSpider.Services.csproj", "{BDF7BB0A-A11B-4FB2-8629-1F34BED9A8F3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VideoSpider.Cache", "VideoSpider.Cache\VideoSpider.Cache.csproj", "{1F8A6827-F21D-45E2-AF5B-1A20ED2490EA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{BDF7BB0A-A11B-4FB2-8629-1F34BED9A8F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BDF7BB0A-A11B-4FB2-8629-1F34BED9A8F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BDF7BB0A-A11B-4FB2-8629-1F34BED9A8F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1F8A6827-F21D-45E2-AF5B-1A20ED2490EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1F8A6827-F21D-45E2-AF5B-1A20ED2490EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1F8A6827-F21D-45E2-AF5B-1A20ED2490EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1F8A6827-F21D-45E2-AF5B-1A20ED2490EA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
