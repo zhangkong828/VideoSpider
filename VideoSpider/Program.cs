@@ -15,8 +15,7 @@ namespace VideoSpider
 
 
             SpiderService.Create().Start();
-            Logger.ColorConsole("执行结束");
-            Console.ReadKey();
+
         }
 
         private static void CurrentDomain_ProcessExit(object sender, EventArgs e)

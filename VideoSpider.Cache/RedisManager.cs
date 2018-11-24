@@ -37,7 +37,7 @@ namespace VideoSpider.Cache
         {
         }
 
-        private static IConnectionMultiplexer GetConnectionRedisMultiplexer()
+        public static IConnectionMultiplexer GetConnectionRedisMultiplexer()
         {
             if (_connMultiplexer == null || !_connMultiplexer.IsConnected)
                 lock (Locker)

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using VideoSpider.Cache;
 using VideoSpider.Infrastructure;
 using VideoSpider.Infrastructure.Extension;
 using VideoSpider.Model;
@@ -17,11 +18,15 @@ namespace VideoSpider.Services
         private static SpiderService _instance;
         private static readonly CancellationTokenSource _cancellation = new CancellationTokenSource();
 
+        private bool isRunning = false;
         private CancellationToken _cancellationToken;
         private List<Task> _tasks;
         private ConcurrentQueue<string> _queue;
         private VideoRepository _videoRepository;
         private VideoSourceRepository _videoSourceRepository;
+
+        private ICacheManager _cache;
+        private const int CacheTime = 60 * 24;//1天
 
         private SpiderService()
         {
@@ -30,6 +35,8 @@ namespace VideoSpider.Services
             _queue = new ConcurrentQueue<string>();
             _videoRepository = new VideoRepository();
             _videoSourceRepository = new VideoSourceRepository();
+
+            _cache = new MemoryCacheManager();
         }
 
         public static SpiderService Create()
@@ -51,17 +58,19 @@ namespace VideoSpider.Services
         public void Start()
         {
             Logger.ColorConsole("Start");
+            isRunning = true;
             StartThread(5);
-            CheckUpdate();
+            Monitor();
 
         }
 
         public void Stop()
         {
-            Logger.ColorConsole("Cancel...");
+            isRunning = false;
+            Logger.ColorConsole("Thread Cancel...");
             _cancellation.Cancel();
             Task.WaitAll(_tasks.ToArray());
-            Logger.ColorConsole("Stop");
+            Logger.ColorConsole("Thread Stop");
         }
 
         private void StartThread(int threadCount)
@@ -109,29 +118,55 @@ namespace VideoSpider.Services
             }
         }
 
+        private void Monitor()
+        {
+            while (true)
+            {
+                CheckUpdate();
+                Thread.Sleep(1000 * 60);
+            }
+        }
 
         private void CheckUpdate()
         {
-            Logger.ColorConsole("开始获取更新");
+            var goTo = true;
+            Logger.ColorConsole("开始获取更新...");
             var url = "http://caijizy.com/?m=vod-index-pg-{0}.html";
-            for (int i = 1; i < 345; i++)
+            for (int i = 1; i < 100; i++)
             {
+                if (!goTo)
+                    break;
+
+                Logger.ColorConsole2(string.Format("当前页码{0}", i));
                 try
                 {
                     var targetUrl = string.Format(url, i);
                     Logger.ColorConsole2(targetUrl);
 
                     var html = HtmlHelper.Get(targetUrl).Result;
-                    var list = Regex.Matches(html, "<td class=\"l\"><a href=\"(.+?)\" target=\"_blank\">(.+?)<font color=\"red\"> \\[(.*?)\\]</font>");
+                    var list = Regex.Matches(html, "<td class=\"l\"><a href=\"(.+?)\" target=\"_blank\">(.+?)<font color=\"red\"> \\[(.*?)\\]</font>[\\s\\S]*?<font color=\"#2932E1\">(.+?)</font>");
                     foreach (Match item in list)
                     {
                         var dUrl = item.Groups[1].Value;
                         var dName = item.Groups[2].Value;
                         var dRemark = item.Groups[3].Value;
-                        var info = string.Format("{0}[{1}] {2}", dName, dRemark, dUrl);
-                        dUrl = "http://caijizy.com" + dUrl;
-                        _queue.Enqueue(dUrl);
-                        Logger.ColorConsole2(info);
+                        var time = item.Groups[4].Value.TrimX().ToDateTime();
+                        if (!string.IsNullOrWhiteSpace(dUrl) && time != DateTime.MinValue)
+                        {
+                            if (time.AddMinutes(5) > DateTime.Now.Date)
+                            {
+                                dUrl = "http://caijizy.com" + dUrl;
+                                if (!_cache.IsExist(dUrl.TrimX()))
+                                {
+                                    var info = string.Format("{0}[{1}] {2}", dName, dRemark, dUrl);
+                                    _queue.Enqueue(dUrl);
+                                    Logger.ColorConsole2(info);
+                                }
+
+                            }
+                        }
+                        goTo = false;
+                        break;
                     }
                 }
                 catch (Exception ex)
@@ -140,9 +175,12 @@ namespace VideoSpider.Services
                 }
                 finally
                 {
-                    Thread.Sleep(1000);
+                    if (goTo)
+                        Thread.Sleep(1000);
                 }
             }
+
+            Logger.ColorConsole("等待下次更新...");
         }
 
 
@@ -283,7 +321,7 @@ namespace VideoSpider.Services
                         Logger.ColorConsole2(string.Format("更新失败:{0}[{1}]", name, remark), ConsoleColor.Red);
                     }
                 }
-
+                _cache.Set(url, name, CacheTime);
             }
         }
 
