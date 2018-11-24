@@ -57,8 +57,8 @@ namespace VideoSpider.Services
 
         public void Start()
         {
-            Logger.ColorConsole("Start");
             isRunning = true;
+            Logger.ColorConsole("Start");
             StartThread(5);
             Monitor();
 
@@ -66,11 +66,12 @@ namespace VideoSpider.Services
 
         public void Stop()
         {
-            isRunning = false;
             Logger.ColorConsole("Thread Cancel...");
             _cancellation.Cancel();
             Task.WaitAll(_tasks.ToArray());
             Logger.ColorConsole("Thread Stop");
+
+            isRunning = false;
         }
 
         private void StartThread(int threadCount)
@@ -81,7 +82,7 @@ namespace VideoSpider.Services
 
                 var task = Task.Factory.StartNew(index =>
                 {
-                    Logger.ColorConsole2(string.Format("线程[{0}]已启动,线程ID:{1}", index, Thread.CurrentThread.ManagedThreadId));
+                    Logger.ColorConsole(string.Format("线程[{0}]已启动,线程ID:{1}", index, Thread.CurrentThread.ManagedThreadId));
 
                     while (true)
                     {
@@ -91,7 +92,7 @@ namespace VideoSpider.Services
                             var url = string.Empty;
                             if (_queue.TryDequeue(out url))
                             {
-                                Logger.ColorConsole2(string.Format("线程[{0}]处理数据:{1}", index, url));
+                                //Logger.ColorConsole(string.Format("线程[{0}]处理数据:{1}", index, url));
                                 DoWork(url);
                             }
                             else
@@ -104,7 +105,7 @@ namespace VideoSpider.Services
                             if (ex is OperationCanceledException)
                                 break;
                             else
-                                Logger.ColorConsole2(string.Format("线程[{0}]出现异常:{1}", index, ex.Message), ConsoleColor.Red);
+                                Logger.ColorConsole(string.Format("线程[{0}]出现异常:{1}", index, ex.Message), ConsoleColor.Red);
                         }
                         finally
                         {
@@ -141,7 +142,7 @@ namespace VideoSpider.Services
                 try
                 {
                     var targetUrl = string.Format(url, i);
-                    Logger.ColorConsole2(targetUrl);
+                    //Logger.ColorConsole2(targetUrl);
 
                     var html = HtmlHelper.Get(targetUrl).Result;
                     var list = Regex.Matches(html, "<td class=\"l\"><a href=\"(.+?)\" target=\"_blank\">(.+?)<font color=\"red\"> \\[(.*?)\\]</font>[\\s\\S]*?<font color=\"#2932E1\">(.+?)</font>");
@@ -153,17 +154,20 @@ namespace VideoSpider.Services
                         var time = item.Groups[4].Value.TrimX().ToDateTime();
                         if (!string.IsNullOrWhiteSpace(dUrl) && time != DateTime.MinValue)
                         {
+                            dUrl = "http://caijizy.com" + dUrl;
+                            Logger.ColorConsole2(string.Format("{0}[{1}]", dName, dRemark));
                             if (time.AddMinutes(5) > DateTime.Now.Date)
                             {
-                                dUrl = "http://caijizy.com" + dUrl;
                                 if (!_cache.IsExist(dUrl.TrimX()))
                                 {
-                                    var info = string.Format("{0}[{1}] {2}", dName, dRemark, dUrl);
                                     _queue.Enqueue(dUrl);
-                                    Logger.ColorConsole2(info);
+                                    continue;
                                 }
-
+                                else
+                                    Logger.ColorConsole2("当日已存在");
                             }
+                            else
+                                Logger.ColorConsole2("当日已更新");
                         }
                         goTo = false;
                         break;
@@ -274,7 +278,7 @@ namespace VideoSpider.Services
                     nSource.UpdateTime = DateTime.Now;
                     _videoSourceRepository.Insert(nSource);
 
-                    Logger.ColorConsole2(string.Format("新增成功:{0}[{1}]", name, remark), ConsoleColor.Green);
+                    Logger.ColorConsole(string.Format("新增成功:{0}[{1}]", name, remark), ConsoleColor.DarkGreen);
                 }
                 else
                 {
@@ -313,12 +317,12 @@ namespace VideoSpider.Services
                             CreateTime = source.CreateTime,
                             UpdateTime = DateTime.Now
                         });
-                        Logger.ColorConsole2(string.Format("更新成功:{0}[{1}]", name, remark), ConsoleColor.Green);
+                        Logger.ColorConsole(string.Format("更新成功:{0}[{1}]", name, remark), ConsoleColor.DarkGreen);
                     }
                     else
                     {
                         _videoSourceRepository.Delete(x => x.Id == source.Id);
-                        Logger.ColorConsole2(string.Format("更新失败:{0}[{1}]", name, remark), ConsoleColor.Red);
+                        Logger.ColorConsole(string.Format("更新失败:{0}[{1}]", name, remark), ConsoleColor.Red);
                     }
                 }
                 _cache.Set(url, name, CacheTime);
