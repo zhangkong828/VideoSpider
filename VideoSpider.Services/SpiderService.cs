@@ -124,7 +124,7 @@ namespace VideoSpider.Services
             while (true)
             {
                 CheckUpdate();
-                Thread.Sleep(1000 * 60);
+                Thread.Sleep(1000 * 60 * 5);
             }
         }
 
@@ -154,12 +154,12 @@ namespace VideoSpider.Services
                         var time = item.Groups[4].Value.TrimX().ToDateTime();
                         if (!string.IsNullOrWhiteSpace(dUrl) && time != DateTime.MinValue)
                         {
-                            dUrl = "http://caijizy.com" + dUrl;
-                            Logger.ColorConsole2(string.Format("{0}[{1}]", dName, dRemark));
-                            if (time.AddMinutes(5) > DateTime.Now.Date)
+                            if (time.AddMinutes(10) > DateTime.Now.Date)
                             {
+                                dUrl = "http://caijizy.com" + dUrl;
                                 if (!_cache.IsExist(dUrl.TrimX()))
                                 {
+                                    Logger.ColorConsole2(string.Format("{0}[{1}]", dName, dRemark));
                                     _queue.Enqueue(dUrl);
                                     continue;
                                 }
