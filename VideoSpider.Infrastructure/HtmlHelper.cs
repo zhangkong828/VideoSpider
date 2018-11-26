@@ -59,12 +59,12 @@ namespace VideoSpider.Infrastructure
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, url);
                 if (tryCount > 0)
                 {
                     tryCount--;
                     goto GetImage;
                 }
+                Logger.Error(ex, url);
                 return null;
             }
         }

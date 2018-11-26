@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -139,6 +140,7 @@ namespace VideoSpider.Services
                     break;
 
                 Logger.ColorConsole2(string.Format("当前页码{0}", i));
+                Logger.Info(string.Format("当前页码{0}", i));
                 try
                 {
                     var targetUrl = string.Format(url, i);
@@ -164,10 +166,10 @@ namespace VideoSpider.Services
                                     continue;
                                 }
                                 else
-                                    Logger.ColorConsole2("当日已存在");
+                                    Logger.ColorConsole2("今日已存在");
                             }
                             else
-                                Logger.ColorConsole2("当日已更新");
+                                Logger.ColorConsole2("今日已更新");
                         }
                         goTo = false;
                         break;
@@ -279,6 +281,7 @@ namespace VideoSpider.Services
                     _videoSourceRepository.Insert(nSource);
 
                     Logger.ColorConsole(string.Format("新增成功:{0}[{1}]", name, remark), ConsoleColor.DarkGreen);
+                    Logger.Info(string.Format("新增成功:{0}[{1}]{2}", name, remark, url));
                 }
                 else
                 {
@@ -318,11 +321,13 @@ namespace VideoSpider.Services
                             UpdateTime = DateTime.Now
                         });
                         Logger.ColorConsole(string.Format("更新成功:{0}[{1}]", name, remark), ConsoleColor.DarkGreen);
+                        Logger.Info(string.Format("更新成功:{0}[{1}]{2}", name, remark, url));
                     }
                     else
                     {
                         _videoSourceRepository.Delete(x => x.Id == source.Id);
                         Logger.ColorConsole(string.Format("更新失败:{0}[{1}]", name, remark), ConsoleColor.Red);
+                        Logger.Info(string.Format("更新失败:{0}[{1}]{2}", name, remark, url));
                     }
                 }
                 _cache.Set(url, name, CacheTime);
